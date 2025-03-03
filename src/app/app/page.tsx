@@ -1,13 +1,14 @@
 import { HydrateClient } from "@/trpc/server";
 import { redirect } from "next/navigation";
-import { auth } from "@/server/auth";
-import { ActivityDisplay } from "@/app/app/_components/activity-display";
-import { TaskManagement } from "@/app/app/_components/task-management";
-import { TaskProvider } from "@/app/app/_components/task-context";
 import Link from "next/link";
+import { auth } from "@/server/auth";
 import { Button } from "@/app/_components/button";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
-import { Footer } from "@/app/app/_components/footer";
+import { ActivityDisplay } from "./_components/activity-display";
+import { TaskManagement } from "./_components/task-management";
+import { TaskProvider } from "./_components/task-context";
+import { Footer } from "./_components/footer";
+import { MobileBanner } from "./_components/mobile-banner";
 
 export default async function AppPage() {
   const session = await auth();
@@ -20,14 +21,19 @@ export default async function AppPage() {
   return (
     <HydrateClient>
       <TaskProvider>
-        <div className="flex min-h-screen flex-col">
-          <div className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">
+        <div className="flex min-h-screen flex-col bg-white dark:bg-neutral-950">
+          <MobileBanner />
+          <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col p-4">
             <header className="mb-8 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold">0.todos</h1>
-                <p className="text-sm text-neutral-400">{session.user.name}</p>
+              <div className="flex items-center gap-4">
+                <Link href="/" className="text-lg font-bold">
+                  0.todos
+                </Link>
+                <span className="text-xs text-neutral-500">
+                  {session.user.name}
+                </span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-2">
                 <ThemeToggle />
                 <Button variant="link" asChild>
                   <Link

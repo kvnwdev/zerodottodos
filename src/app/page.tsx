@@ -32,12 +32,12 @@ export default async function Home() {
 
         <main className="w-full">
           <motion.header
-            className="relative w-full overflow-hidden pb-24 pt-48 md:pb-64 md:pt-64"
+            className="relative w-full overflow-hidden px-4 pb-24 pt-48 md:px-6 md:pb-64 md:pt-64"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
           >
-            <div className="container mx-auto grid grid-cols-2 items-center gap-16">
+            <div className="container mx-auto grid grid-cols-1 items-center gap-16 md:grid-cols-2">
               <div className="relative z-10">
                 <motion.div
                   initial={{ opacity: 0 }}
@@ -102,7 +102,7 @@ export default async function Home() {
           </motion.header>
 
           <motion.section
-            className="container mx-auto border-t border-neutral-200 py-24"
+            className="container mx-auto border-t border-neutral-200 px-4 py-24 md:px-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.4 }}
@@ -111,12 +111,12 @@ export default async function Home() {
           </motion.section>
 
           <motion.section
-            className="container mx-auto border-t border-neutral-200 py-24"
+            className="container mx-auto border-t border-neutral-200 px-4 py-24 md:px-6"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.5 }}
           >
-            <div className="grid gap-24 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-24 md:grid-cols-2">
               <div>
                 <h2 className="mb-8 text-2xl font-medium">Essence</h2>
                 <p className="leading-relaxed text-neutral-500">

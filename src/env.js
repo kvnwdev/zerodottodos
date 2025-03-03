@@ -13,6 +13,8 @@ export const env = createEnv({
         : z.string().optional(),
     GITHUB_ID: z.string(),
     GITHUB_SECRET: z.string(),
+    DISCORD_ID: z.string(),
+    DISCORD_SECRET: z.string(),
     DATABASE_URL: z.string().url(),
     NODE_ENV: z
       .enum(["development", "test", "production"])
@@ -36,6 +38,8 @@ export const env = createEnv({
     AUTH_SECRET: process.env.AUTH_SECRET,
     GITHUB_ID: process.env.GITHUB_ID,
     GITHUB_SECRET: process.env.GITHUB_SECRET,
+    DISCORD_ID: process.env.DISCORD_ID,
+    DISCORD_SECRET: process.env.DISCORD_SECRET,
     DATABASE_URL: process.env.DATABASE_URL,
     NODE_ENV: process.env.NODE_ENV,
   },

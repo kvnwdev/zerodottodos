@@ -6,7 +6,7 @@ import type { Session } from "next-auth";
 export function Footer({ session }: { session: Session | null }) {
   return (
     <footer className="container mx-auto border-t border-neutral-200 py-8">
-      <div className="container mx-auto flex flex-col items-center justify-between gap-4 px-4 md:flex-row">
+      <div className="container mx-auto flex flex-col items-center justify-between gap-6 px-4 sm:px-6 md:flex-row">
         <div className="text-sm text-neutral-400">
           Made with purpose by{" "}
           <Link
@@ -21,7 +21,7 @@ export function Footer({ session }: { session: Session | null }) {
 
         <CountdownTimer />
 
-        <div className="flex items-center space-x-8">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:space-x-4 md:flex-nowrap md:space-x-8">
           <Link
             href={session ? "/app" : "/api/auth/signin"}
             className="text-sm text-neutral-400 transition-colors hover:text-neutral-900"

@@ -70,7 +70,7 @@ export function TaskManagement() {
       <TaskInput onTaskCreate={handleTaskCreate} />
 
       {/* Task columns */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {statusColumns.map((column) => (
           <div key={column.status} className="flex flex-col">
             {renderTaskList(column.status, optimisticTasks)}
