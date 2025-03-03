@@ -1,5 +1,5 @@
 -- CreateEnum
-CREATE TYPE "TaskStatus" AS ENUM ('SOON', 'NOW', 'HOLD');
+CREATE TYPE "TaskStatus" AS ENUM ('SOON', 'NOW', 'HOLD', 'COMPLETED');
 
 -- CreateTable
 CREATE TABLE "Task" (
@@ -11,6 +11,8 @@ CREATE TABLE "Task" (
     "updatedAt" TIMESTAMP(3) NOT NULL,
     "position" INTEGER NOT NULL DEFAULT 0,
     "userId" TEXT NOT NULL,
+    "completedAt" TIMESTAMP(3),
+    "completedDayId" TEXT,
 
     CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
 );
@@ -28,22 +30,22 @@ CREATE TABLE "CompletedDay" (
 );
 
 -- CreateIndex
-CREATE INDEX "Task_userId_idx" ON "Task"("userId");
+CREATE INDEX "Task_userId_status_idx" ON "Task"("userId", "status");
 
 -- CreateIndex
-CREATE INDEX "Task_status_idx" ON "Task"("status");
+CREATE INDEX "Task_completedDayId_idx" ON "Task"("completedDayId");
 
 -- CreateIndex
 CREATE INDEX "CompletedDay_userId_idx" ON "CompletedDay"("userId");
-
--- CreateIndex
-CREATE INDEX "CompletedDay_date_idx" ON "CompletedDay"("date");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "CompletedDay_userId_date_key" ON "CompletedDay"("userId", "date");
 
 -- AddForeignKey
 ALTER TABLE "Task" ADD CONSTRAINT "Task_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+
+-- AddForeignKey
+ALTER TABLE "Task" ADD CONSTRAINT "Task_completedDayId_fkey" FOREIGN KEY ("completedDayId") REFERENCES "CompletedDay"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "CompletedDay" ADD CONSTRAINT "CompletedDay_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;
