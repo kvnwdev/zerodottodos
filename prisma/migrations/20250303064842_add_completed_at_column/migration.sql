@@ -1,17 +1,17 @@
 -- CreateEnum
-CREATE TYPE "TaskStatus" AS ENUM ('SOON', 'NOW', 'HOLD', 'COMPLETED');
+CREATE TYPE "TaskStatus" AS ENUM ('SOON', 'NOW', 'HOLD');
 
 -- CreateTable
 CREATE TABLE "Task" (
     "id" TEXT NOT NULL,
     "content" TEXT NOT NULL,
-    "status" "TaskStatus" NOT NULL DEFAULT 'SOON',
+    "status" TEXT NOT NULL DEFAULT 'SOON',
     "isImportant" BOOLEAN NOT NULL DEFAULT false,
+    "position" INTEGER NOT NULL DEFAULT 0,
     "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "updatedAt" TIMESTAMP(3) NOT NULL,
-    "position" INTEGER NOT NULL DEFAULT 0,
-    "userId" TEXT NOT NULL,
     "completedAt" TIMESTAMP(3),
+    "userId" TEXT NOT NULL,
     "completedDayId" TEXT,
 
     CONSTRAINT "Task_pkey" PRIMARY KEY ("id")
