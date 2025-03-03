@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { api } from "@/trpc/react";
 import { ActivityGraph } from "@/app/_components/activity-graph";
 import { ScrollArea } from "@/app/_components/ui/scroll-area";
@@ -60,6 +60,13 @@ export function ActivityDisplay() {
 
   // Handle selecting a day in the activity graph
   const handleDaySelect = (date: string) => {
+    console.log(
+      "Selected date:",
+      date,
+      "Current tasks data:",
+      getTasksForDate.data,
+    );
+
     if (date === selectedDate) {
       // Toggle task details if clicking the same date
       setShowTaskDetails(!showTaskDetails);
@@ -78,19 +85,69 @@ export function ActivityDisplay() {
   // Fetch completed tasks for the selected date using mutation
   const getTasksForDate = api.task.getCompletedTasksByDates.useMutation();
 
+  // Use a ref to keep a stable reference to the mutation function
+  const getTasksForDateRef = useRef(getTasksForDate);
+
+  // Update the ref whenever the mutation changes
+  useEffect(() => {
+    getTasksForDateRef.current = getTasksForDate;
+  }, [getTasksForDate]);
+
+  // Create a stable reference to the mutation function using the ref
+  const fetchTasksForDate = useCallback((date: string) => {
+    console.log("Fetching tasks for date:", date);
+    getTasksForDateRef.current.mutate(
+      { dates: [date] },
+      {
+        onSuccess: (data) => {
+          console.log(`Found ${data.length} tasks for ${date}:`, data);
+        },
+        onError: (error) => {
+          console.error(`Error fetching tasks for ${date}:`, error);
+        },
+      },
+    );
+  }, []);
+
   // Effect to fetch tasks for the selected date
   useEffect(() => {
     if (selectedDate) {
-      getTasksForDate.mutate({ dates: [selectedDate] });
+      fetchTasksForDate(selectedDate);
     }
-  }, [selectedDate, getTasksForDate]);
+  }, [selectedDate, fetchTasksForDate]);
 
   // Format the activity data for the graph
   const formattedActivityData: ActivityData[] = [];
 
   if (Array.isArray(activityData)) {
+    console.log("Raw activity data received:", JSON.stringify(activityData));
+
+    // Get today's date in YYYY-MM-DD format
+    const today = new Date();
+    console.log("Today's date object:", today.toString());
+
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, "0");
+    const day = String(today.getDate()).padStart(2, "0");
+    const todayStr = `${year}-${month}-${day}`;
+
+    console.log("Today's date for comparison:", todayStr);
+
+    // Compare with ISO string approach
+    const todayISO = today.toISOString().split("T")[0];
+    console.log("Today via ISO method:", todayISO);
+
+    // Log all dates in the activity data
+    const allDates = activityData.map((item) => item.date).sort();
+    console.log("All activity dates:", allDates);
+
     activityData.forEach((item: ActivityData) => {
       if (item?.date && typeof item.count === "number") {
+        // Check if this is today's entry
+        if (item.date === todayStr) {
+          console.log("Found today's entry:", item);
+        }
+
         formattedActivityData.push({
           date: item.date,
           count: item.count,
@@ -102,7 +159,7 @@ export function ActivityDisplay() {
   return (
     <div className="mb-8 space-y-4">
       <h2 className="text-xl font-semibold">Activity</h2>
-      <div className="activity-graph bg-card rounded-lg border p-4 shadow-sm">
+      <div className="activity-graph rounded-lg border bg-card p-4 shadow-sm">
         <ActivityGraph
           data={formattedActivityData}
           onDaySelect={handleDaySelect}
@@ -113,7 +170,7 @@ export function ActivityDisplay() {
       <AnimatePresence>
         {showTaskDetails && selectedDate && (
           <motion.div
-            className="task-details-container bg-card relative rounded-lg border p-4 shadow-sm"
+            className="task-details-container relative rounded-lg border bg-card p-4 shadow-sm"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
@@ -125,7 +182,7 @@ export function ActivityDisplay() {
               </h3>
               <button
                 onClick={handleCloseDetails}
-                className="hover:bg-muted rounded-full p-1"
+                className="rounded-full p-1 hover:bg-muted"
                 aria-label="Close task details"
               >
                 <X size={18} />
@@ -134,7 +191,7 @@ export function ActivityDisplay() {
 
             <ScrollArea className="h-[200px]">
               {getTasksForDate.isPending ? (
-                <div className="text-muted-foreground py-4 text-center text-sm">
+                <div className="py-4 text-center text-sm text-muted-foreground">
                   Loading tasks...
                 </div>
               ) : getTasksForDate.data && getTasksForDate.data.length > 0 ? (
@@ -156,7 +213,7 @@ export function ActivityDisplay() {
                   ))}
                 </ul>
               ) : (
-                <div className="text-muted-foreground py-4 text-center text-sm">
+                <div className="py-4 text-center text-sm text-muted-foreground">
                   No tasks completed on this day.
                 </div>
               )}

@@ -180,25 +180,48 @@ export const taskRouter = createTRPCRouter({
       // Process each date separately
       try {
         const allTasksPromises = input.dates.map(async (dateStr) => {
-          const date = new Date(dateStr);
+          // Parse the input date string (YYYY-MM-DD)
+          const [monthStr, dayStr] = dateStr.split("-").slice(1);
+          const month = parseInt(monthStr ?? "0") - 1; // Convert to 0-indexed month for JS Date
+          const day = parseInt(dayStr ?? "0");
 
-          // Start of day
-          const startDate = new Date(date);
-          startDate.setHours(0, 0, 0, 0);
+          console.log(
+            `Looking for tasks on ${monthStr}/${dayStr} (month index: ${month}, day: ${day}) from date string: ${dateStr}`,
+          );
 
-          // End of day
-          const endDate = new Date(date);
-          endDate.setHours(23, 59, 59, 999);
-
-          return ctx.db.task.findMany({
+          // Get all completed tasks regardless of year
+          const tasks = await ctx.db.task.findMany({
             where: {
               userId: ctx.session.user.id,
               status: "COMPLETED",
               completedAt: {
-                gte: startDate,
-                lte: endDate,
+                not: null,
               },
             },
+          });
+
+          // Filter tasks by month and day, regardless of year
+          return tasks.filter((task) => {
+            if (!task.completedAt) return false;
+
+            // Create a new date object with the task completed time to handle timezone consistently
+            const taskDate = new Date(task.completedAt);
+            // Adjust for timezone offset if needed
+            const adjustedTaskDate = new Date(taskDate);
+            adjustedTaskDate.setDate(taskDate.getDate() + 1);
+
+            const taskMonth = adjustedTaskDate.getMonth(); // 0-indexed
+            const taskDay = adjustedTaskDate.getDate();
+
+            const taskMatches = taskMonth === month && taskDay === day;
+
+            if (taskMatches) {
+              console.log(
+                `Found matching task for ${dateStr}: "${task.content}", completed at ${task.completedAt?.toISOString()}`,
+              );
+            }
+
+            return taskMatches;
           });
         });
 
@@ -225,6 +248,15 @@ export const taskRouter = createTRPCRouter({
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
+    const now = new Date();
+    console.log("Current datetime:", now.toString());
+    console.log("Current date (ISO):", now.toISOString());
+    console.log(
+      "Getting year activity from:",
+      oneYearAgo.toISOString(),
+      "to now",
+    );
+
     // Find all completed tasks in the last year
     const completedTasks = await ctx.db.task.findMany({
       where: {
@@ -236,7 +268,21 @@ export const taskRouter = createTRPCRouter({
       },
       select: {
         completedAt: true,
+        content: true,
       },
+    });
+
+    console.log(
+      `Found ${completedTasks.length} completed tasks in the last year`,
+    );
+
+    // Log completion times of tasks
+    completedTasks.forEach((task) => {
+      if (task.completedAt) {
+        console.log(
+          `Task "${task.content}" completed at ${task.completedAt.toISOString()}`,
+        );
+      }
     });
 
     // Group tasks by day and count them
@@ -245,8 +291,14 @@ export const taskRouter = createTRPCRouter({
     for (const task of completedTasks) {
       // Make sure completedAt is not null before using it
       if (task.completedAt) {
-        // Convert to YYYY-MM-DD format
-        const dateStr = task.completedAt.toISOString().split("T")[0];
+        // Get the local date string (YYYY-MM-DD) based on user's timezone
+        const date = new Date(task.completedAt);
+
+        // Use the current year instead of the actual task year to match the display
+        const currentYear = new Date().getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, "0");
+        const day = String(date.getDate()).padStart(2, "0");
+        const dateStr = `${currentYear}-${month}-${day}`;
 
         // Ensure dateStr is a string (not undefined)
         if (dateStr) {
@@ -262,6 +314,13 @@ export const taskRouter = createTRPCRouter({
       date,
       count,
     }));
+
+    // Log the 5 most recent dates in result
+    const sortedResult = [...result].sort((a, b) =>
+      b.date.localeCompare(a.date),
+    );
+    const recentDates = sortedResult.slice(0, 5);
+    console.log("Most recent activity dates:", recentDates);
 
     return result;
   }),
