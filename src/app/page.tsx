@@ -1,12 +1,12 @@
 import Link from "next/link";
 import * as motion from "motion/react-client";
 import { auth } from "@/server/auth";
-import { FlickeringGrid } from "./_components/flickering-grid";
-import { Button } from "@/app/_components/button";
+import { FlickeringGrid } from "@/app/_components/flickering-grid";
+import { Button } from "@/app/_components/ui/button";
 import { HydrateClient } from "@/trpc/server";
-import { TimeLeft } from "./_components/landing/time-left";
-import { TimeVisualizer } from "./_components/landing/time-visualizer";
-import { Footer } from "./_components/landing/footer";
+import { TimeLeft } from "@/app/_components/landing/time-left";
+import { TimeVisualizer } from "@/app/_components/landing/time-visualizer";
+import { Footer } from "@/app/_components/landing/footer";
 
 export default async function Home() {
   const session = await auth();

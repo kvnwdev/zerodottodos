@@ -5,6 +5,7 @@ import { type Metadata } from "next";
 
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@/app/_components/theme-provider";
+import { PomodoroProvider } from "@/app/_components/pomodoro/pomodoro-context";
 
 export const metadata: Metadata = {
   title: "0.todos | minimal task tracking",
@@ -16,7 +17,11 @@ export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className={`${GeistSans.variable}`}>
+    <html
+      lang="en"
+      className={`${GeistSans.variable}`}
+      suppressHydrationWarning
+    >
       <head>
         {/* This script prevents theme flash on page load */}
         <script
@@ -38,7 +43,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-screen bg-white text-neutral-900 transition-colors duration-200 dark:bg-neutral-900 dark:text-neutral-50">
         <TRPCReactProvider>
-          <ThemeProvider>{children}</ThemeProvider>
+          <ThemeProvider>
+            <PomodoroProvider>{children}</PomodoroProvider>
+          </ThemeProvider>
         </TRPCReactProvider>
       </body>
     </html>

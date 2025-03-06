@@ -16,6 +16,19 @@ export const taskRouter = createTRPCRouter({
           not: "COMPLETED",
         },
       },
+      select: {
+        id: true,
+        content: true,
+        status: true,
+        isImportant: true,
+        position: true,
+        createdAt: true,
+        updatedAt: true,
+        completedAt: true,
+        userId: true,
+        completedDayId: true,
+        totalPomodoros: true,
+      },
       orderBy: {
         position: "asc",
       },
@@ -171,23 +184,22 @@ export const taskRouter = createTRPCRouter({
   }),
 
   getCompletedTasksByDates: protectedProcedure
-    .input(
-      z.object({
-        dates: z.array(z.string()),
-      }),
-    )
+    .input(z.object({ dates: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
-      // Process each date separately
       try {
+        // Process each date
         const allTasksPromises = input.dates.map(async (dateStr) => {
-          // Parse the input date string (YYYY-MM-DD)
-          const [monthStr, dayStr] = dateStr.split("-").slice(1);
-          const month = parseInt(monthStr ?? "0") - 1; // Convert to 0-indexed month for JS Date
-          const day = parseInt(dayStr ?? "0");
+          // Split the date string into parts
+          const parts = dateStr.split("-");
+          if (parts.length < 3) {
+            throw new Error(`Invalid date format: ${dateStr}`);
+          }
 
-          console.log(
-            `Looking for tasks on ${monthStr}/${dayStr} (month index: ${month}, day: ${day}) from date string: ${dateStr}`,
-          );
+          // Ensure parts[1] and parts[2] are not undefined with fallbacks
+          const month = parts[1] ?? "1";
+          const dayOfMonth = parts[2] ?? "1";
+          const monthIndex = parseInt(month, 10) - 1; // Convert to 0-indexed month
+          const day = parseInt(dayOfMonth, 10);
 
           // Get all completed tasks regardless of year
           const tasks = await ctx.db.task.findMany({
@@ -198,30 +210,31 @@ export const taskRouter = createTRPCRouter({
                 not: null,
               },
             },
+            select: {
+              id: true,
+              content: true,
+              status: true,
+              isImportant: true,
+              position: true,
+              createdAt: true,
+              updatedAt: true,
+              completedAt: true,
+              userId: true,
+              completedDayId: true,
+              totalPomodoros: true,
+            },
           });
 
           // Filter tasks by month and day, regardless of year
           return tasks.filter((task) => {
             if (!task.completedAt) return false;
 
-            // Create a new date object with the task completed time to handle timezone consistently
+            // Use UTC methods consistently
             const taskDate = new Date(task.completedAt);
-            // Adjust for timezone offset if needed
-            const adjustedTaskDate = new Date(taskDate);
-            adjustedTaskDate.setDate(taskDate.getDate() + 1);
+            const taskMonth = taskDate.getUTCMonth(); // 0-indexed
+            const taskDay = taskDate.getUTCDate();
 
-            const taskMonth = adjustedTaskDate.getMonth(); // 0-indexed
-            const taskDay = adjustedTaskDate.getDate();
-
-            const taskMatches = taskMonth === month && taskDay === day;
-
-            if (taskMatches) {
-              console.log(
-                `Found matching task for ${dateStr}: "${task.content}", completed at ${task.completedAt?.toISOString()}`,
-              );
-            }
-
-            return taskMatches;
+            return taskMonth === monthIndex && taskDay === day;
           });
         });
 
@@ -237,7 +250,10 @@ export const taskRouter = createTRPCRouter({
           );
         });
       } catch (error) {
-        console.error("Error in getCompletedTasksByDates:", error);
+        console.error(
+          "Error in getCompletedTasksByDates:",
+          error instanceof Error ? error.message : String(error),
+        );
         return [];
       }
     }),
@@ -248,82 +264,116 @@ export const taskRouter = createTRPCRouter({
     const oneYearAgo = new Date();
     oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
-    const now = new Date();
-    console.log("Current datetime:", now.toString());
-    console.log("Current date (ISO):", now.toISOString());
-    console.log(
-      "Getting year activity from:",
-      oneYearAgo.toISOString(),
-      "to now",
-    );
-
-    // Find all completed tasks in the last year
+    // Find all completed tasks in the last year with their pomodoro sessions
     const completedTasks = await ctx.db.task.findMany({
       where: {
         userId: ctx.session.user.id,
         status: "COMPLETED",
         completedAt: {
-          gte: oneYearAgo,
+          not: null,
         },
       },
-      select: {
-        completedAt: true,
-        content: true,
+      include: {
+        pomodoroSessions: {
+          where: {
+            type: "WORK",
+            completedAt: { not: null },
+          },
+          select: {
+            id: true,
+            type: true,
+            completedAt: true,
+          },
+        },
       },
     });
 
-    console.log(
-      `Found ${completedTasks.length} completed tasks in the last year`,
-    );
-
-    // Log completion times of tasks
-    completedTasks.forEach((task) => {
-      if (task.completedAt) {
-        console.log(
-          `Task "${task.content}" completed at ${task.completedAt.toISOString()}`,
-        );
-      }
-    });
-
-    // Group tasks by day and count them
-    const activityByDay = new Map<string, number>();
+    // Group tasks by day and count them, along with pomodoros
+    const activityByDay = new Map<
+      string,
+      { tasks: number; pomodoros: number }
+    >();
 
     for (const task of completedTasks) {
-      // Make sure completedAt is not null before using it
       if (task.completedAt) {
-        // Get the local date string (YYYY-MM-DD) based on user's timezone
-        const date = new Date(task.completedAt);
+        // Get UTC date string (YYYY-MM-DD)
+        const dateStr = task.completedAt.toISOString().split("T")[0];
+        if (!dateStr) continue; // Skip if we couldn't get a valid date string
 
-        // Use the current year instead of the actual task year to match the display
-        const currentYear = new Date().getFullYear();
-        const month = String(date.getMonth() + 1).padStart(2, "0");
-        const day = String(date.getDate()).padStart(2, "0");
-        const dateStr = `${currentYear}-${month}-${day}`;
+        // Get or initialize the day's data
+        const dayData = activityByDay.get(dateStr) ?? {
+          tasks: 0,
+          pomodoros: 0,
+        };
 
-        // Ensure dateStr is a string (not undefined)
-        if (dateStr) {
-          // Safely update the count
-          const currentCount = activityByDay.get(dateStr) ?? 0;
-          activityByDay.set(dateStr, currentCount + 1);
+        // Update counts
+        dayData.tasks += 1;
+        // Count completed WORK pomodoro sessions
+        // Use a safe check for pomodoroSessions array
+        let sessionCount = 0;
+        // Use a safe type assertion to handle the property access
+        if (
+          task.pomodoroSessions &&
+          typeof task.pomodoroSessions === "object" &&
+          "length" in task.pomodoroSessions &&
+          typeof task.pomodoroSessions.length === "number"
+        ) {
+          sessionCount = task.pomodoroSessions.length;
         }
+        dayData.pomodoros = dayData.pomodoros + sessionCount;
+
+        activityByDay.set(dateStr, dayData);
       }
     }
 
     // Convert to array format for the client
-    const result = Array.from(activityByDay.entries()).map(([date, count]) => ({
+    const result = Array.from(activityByDay.entries()).map(([date, data]) => ({
       date,
-      count,
+      count: data.tasks,
+      pomodoros: data.pomodoros,
     }));
-
-    // Log the 5 most recent dates in result
-    const sortedResult = [...result].sort((a, b) =>
-      b.date.localeCompare(a.date),
-    );
-    const recentDates = sortedResult.slice(0, 5);
-    console.log("Most recent activity dates:", recentDates);
 
     return result;
   }),
 
-  // Get activity data for the last year based on completed tasks
+  // Complete a task
+  complete: protectedProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const task = await ctx.db.task.update({
+        where: {
+          id: input.id,
+          userId: ctx.session.user.id,
+        },
+        data: {
+          status: "COMPLETED",
+          completedAt: new Date(),
+        },
+      });
+
+      // Create a completed day record for today
+      const today = new Date();
+
+      // Check if today already exists in completedDays
+      const existingDay = await ctx.db.completedDay.findFirst({
+        where: {
+          userId: ctx.session.user.id,
+          date: {
+            equals: today,
+          },
+        },
+      });
+
+      // Create the completed day if it doesn't exist
+      if (!existingDay) {
+        await ctx.db.completedDay.create({
+          data: {
+            userId: ctx.session.user.id,
+            date: today,
+          },
+        });
+      }
+
+      return task;
+    }),
 });
