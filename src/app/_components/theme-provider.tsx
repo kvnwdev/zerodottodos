@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
+import { usePathname } from "next/navigation"; // Add import for Next.js usePathname hook
 
 type Theme = "light" | "dark";
 
@@ -15,15 +16,12 @@ const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   // Start with undefined theme to prevent initial flashing
   const [theme, setTheme] = useState<Theme | undefined>(undefined);
-  const [pathname, setPathname] = useState<string>("");
+  // Use Next.js usePathname hook instead of managing pathname manually
+  const pathname = usePathname();
 
   // Initialization function - extract to make it reusable
   const initializeTheme = () => {
     try {
-      // Get current pathname
-      const currentPath = window.location.pathname;
-      setPathname(currentPath);
-
       // Check if theme was previously stored
       const storedTheme = localStorage.getItem("theme") as Theme | null;
 
@@ -57,39 +55,18 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
 
-  // Listen for pathname changes
-  useEffect(() => {
-    const handleRouteChange = () => {
-      setPathname(window.location.pathname);
-    };
-
-    window.addEventListener("popstate", handleRouteChange);
-
-    // Also listen for Next.js route changes
-    if (typeof document !== "undefined") {
-      document.addEventListener("visibilitychange", () => {
-        if (document.visibilityState === "visible") {
-          setPathname(window.location.pathname);
-        }
-      });
-    }
-
-    return () => {
-      window.removeEventListener("popstate", handleRouteChange);
-    };
-  }, []);
-
-  // Update document when theme changes, but only apply dark theme for /app routes
+  // Update document when theme changes, applying to appropriate routes
   useEffect(() => {
     // Don't do anything if theme is not yet initialized
     if (theme === undefined) return;
 
     // For landing page, always use light theme
-    const isAppRoute = pathname.startsWith("/app");
+    const isAppRoute = pathname?.startsWith("/app");
 
+    // Modified logic to handle theme switching properly
     if (theme === "dark" && isAppRoute) {
       document.documentElement.classList.add("dark");
-    } else {
+    } else if (theme === "light" || !isAppRoute) {
       document.documentElement.classList.remove("dark");
     }
 
@@ -97,10 +74,10 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("theme", theme);
   }, [theme, pathname]);
 
-  // Force a theme re-initialization when route changes to/from /app
+  // Re-initialize theme when route changes
   useEffect(() => {
-    // Re-initialize theme when entering or leaving the app route
-    initializeTheme();
+    // Just apply existing theme when pathname changes - don't reinitialize
+    // This keeps the user's preference intact during navigation
   }, [pathname]);
 
   const toggleTheme = () => {
