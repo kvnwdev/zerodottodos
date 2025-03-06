@@ -2,13 +2,15 @@ import { HydrateClient } from "@/trpc/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@/server/auth";
-import { Button } from "@/app/_components/button";
+import { Button } from "@/app/_components/ui/button";
 import { ThemeToggle } from "@/app/_components/theme-toggle";
-import { ActivityDisplay } from "./_components/activity-display";
-import { TaskManagement } from "./_components/task-management";
-import { TaskProvider } from "./_components/task-context";
-import { Footer } from "./_components/footer";
-import { MobileBanner } from "./_components/mobile-banner";
+import { ActivityDisplay } from "@/app/_components/activity-display";
+import { TaskManagement } from "@/app/_components/task-management";
+import { TaskProvider } from "@/app/_components/task-context";
+import { Footer } from "@/app/_components/footer";
+import { MobileBanner } from "@/app/_components/mobile-banner";
+import { PomodoroTimer } from "@/app/_components/pomodoro/pomodoro-timer";
+import { DevTools } from "@/app/_components/dev/dev-tools";
 
 export default async function AppPage() {
   const session = await auth();
@@ -46,6 +48,11 @@ export default async function AppPage() {
               </div>
             </header>
 
+            {/* Toolbar with Pomodoro Timer */}
+            <section className="mb-4 flex items-center justify-between border-b border-neutral-200 pb-4 dark:border-neutral-800">
+              <PomodoroTimer />
+            </section>
+
             {/* Activity Display */}
             <section className="mb-8">
               <ActivityDisplay />
@@ -55,10 +62,11 @@ export default async function AppPage() {
             <section>
               <TaskManagement />
             </section>
-          </div>
 
-          {/* Footer */}
-          <Footer />
+            {/* Footer */}
+            <Footer />
+          </div>
+          <DevTools />
         </div>
       </TaskProvider>
     </HydrateClient>

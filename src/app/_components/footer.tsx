@@ -51,8 +51,8 @@ function InspirationalMessage() {
 export function Footer() {
   return (
     <footer className="mt-auto py-8">
-      <div className="mx-auto w-full max-w-4xl border-t border-neutral-200 px-4 pt-8 dark:border-neutral-800">
-        <div className="flex flex-col items-center justify-between gap-4 text-sm text-neutral-600 sm:flex-row dark:text-neutral-400">
+      <div className="mx-auto w-full border-t border-neutral-200 px-4 pt-8 dark:border-neutral-800">
+        <div className="flex flex-col items-center justify-between gap-4 text-sm text-neutral-600 dark:text-neutral-400 sm:flex-row">
           <div className="flex gap-4">
             <Link
               href="/privacy"

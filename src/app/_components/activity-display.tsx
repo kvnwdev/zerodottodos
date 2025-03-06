@@ -11,6 +11,7 @@ import { X } from "lucide-react";
 interface ActivityData {
   date: string;
   count: number;
+  pomodoros: number;
 }
 
 // Interface for completed tasks
@@ -19,24 +20,31 @@ interface CompletedTask {
   content: string;
   isImportant: boolean;
   completedAt: Date | null;
+  totalPomodoros: number;
 }
 
 // Format date string to a more natural format
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "selected date";
 
-  const date = new Date(dateString);
+  const date = new Date(dateString + "T00:00:00.000Z");
   return date.toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
     year: "numeric",
+    timeZone: "UTC", // Force UTC to match our data
   });
 };
 
 export function ActivityDisplay() {
-  // Use the task router's getYearActivity method instead of completedDay router
-  const { data: activityData } = api.task.getYearActivity.useQuery();
+  const utils = api.useUtils();
+  // Use the task router's getYearActivity method with options to ensure fresh data
+  const { data: activityData } = api.task.getYearActivity.useQuery(undefined, {
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    refetchOnReconnect: true,
+  });
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [showTaskDetails, setShowTaskDetails] = useState(false);
 
@@ -60,13 +68,6 @@ export function ActivityDisplay() {
 
   // Handle selecting a day in the activity graph
   const handleDaySelect = (date: string) => {
-    console.log(
-      "Selected date:",
-      date,
-      "Current tasks data:",
-      getTasksForDate.data,
-    );
-
     if (date === selectedDate) {
       // Toggle task details if clicking the same date
       setShowTaskDetails(!showTaskDetails);
@@ -94,20 +95,23 @@ export function ActivityDisplay() {
   }, [getTasksForDate]);
 
   // Create a stable reference to the mutation function using the ref
-  const fetchTasksForDate = useCallback((date: string) => {
-    console.log("Fetching tasks for date:", date);
-    getTasksForDateRef.current.mutate(
-      { dates: [date] },
-      {
-        onSuccess: (data) => {
-          console.log(`Found ${data.length} tasks for ${date}:`, data);
+  const fetchTasksForDate = useCallback(
+    (date: string) => {
+      getTasksForDateRef.current.mutate(
+        { dates: [date] },
+        {
+          onSuccess: (_data) => {
+            // Invalidate the year activity data to ensure it's updated
+            void utils.task.getYearActivity.invalidate();
+          },
+          onError: (error) => {
+            console.error(`Error fetching tasks for ${date}:`, error);
+          },
         },
-        onError: (error) => {
-          console.error(`Error fetching tasks for ${date}:`, error);
-        },
-      },
-    );
-  }, []);
+      );
+    },
+    [utils.task],
+  );
 
   // Effect to fetch tasks for the selected date
   useEffect(() => {
@@ -120,37 +124,13 @@ export function ActivityDisplay() {
   const formattedActivityData: ActivityData[] = [];
 
   if (Array.isArray(activityData)) {
-    console.log("Raw activity data received:", JSON.stringify(activityData));
-
-    // Get today's date in YYYY-MM-DD format
-    const today = new Date();
-    console.log("Today's date object:", today.toString());
-
-    const year = today.getFullYear();
-    const month = String(today.getMonth() + 1).padStart(2, "0");
-    const day = String(today.getDate()).padStart(2, "0");
-    const todayStr = `${year}-${month}-${day}`;
-
-    console.log("Today's date for comparison:", todayStr);
-
-    // Compare with ISO string approach
-    const todayISO = today.toISOString().split("T")[0];
-    console.log("Today via ISO method:", todayISO);
-
-    // Log all dates in the activity data
-    const allDates = activityData.map((item) => item.date).sort();
-    console.log("All activity dates:", allDates);
-
+    // Process all activity data dates
     activityData.forEach((item: ActivityData) => {
       if (item?.date && typeof item.count === "number") {
-        // Check if this is today's entry
-        if (item.date === todayStr) {
-          console.log("Found today's entry:", item);
-        }
-
         formattedActivityData.push({
           date: item.date,
           count: item.count,
+          pomodoros: item.pomodoros,
         });
       }
     });
@@ -159,7 +139,7 @@ export function ActivityDisplay() {
   return (
     <div className="mb-8 space-y-4">
       <h2 className="text-xl font-semibold">Activity</h2>
-      <div className="activity-graph rounded-lg border bg-card p-4 shadow-sm">
+      <div className="activity-graph rounded-lg border bg-card p-2 shadow-sm">
         <ActivityGraph
           data={formattedActivityData}
           onDaySelect={handleDaySelect}
@@ -182,20 +162,20 @@ export function ActivityDisplay() {
               </h3>
               <button
                 onClick={handleCloseDetails}
-                className="rounded-full p-1 hover:bg-muted"
+                className="`hover`:bg-muted rounded-full p-1"
                 aria-label="Close task details"
               >
                 <X size={18} />
               </button>
             </div>
 
-            <ScrollArea className="h-[200px]">
-              {getTasksForDate.isPending ? (
-                <div className="py-4 text-center text-sm text-muted-foreground">
-                  Loading tasks...
-                </div>
-              ) : getTasksForDate.data && getTasksForDate.data.length > 0 ? (
-                <ul className="space-y-2">
+            {getTasksForDate.isPending ? (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                Loading tasks...
+              </div>
+            ) : getTasksForDate.data && getTasksForDate.data.length > 0 ? (
+              <ScrollArea className="max-h-[400px]">
+                <ul className="space-y-2 pb-1">
                   {getTasksForDate.data.map((task: CompletedTask) => (
                     <li key={task.id} className="flex items-start text-sm">
                       <span className="mr-2 text-xs text-neutral-400">
@@ -209,15 +189,20 @@ export function ActivityDisplay() {
                       <span className={task.isImportant ? "font-medium" : ""}>
                         {task.content}
                       </span>
+                      {task.totalPomodoros > 0 && (
+                        <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium dark:bg-rose-900">
+                          {task.totalPomodoros} ⏰
+                        </span>
+                      )}
                     </li>
                   ))}
                 </ul>
-              ) : (
-                <div className="py-4 text-center text-sm text-muted-foreground">
-                  No tasks completed on this day.
-                </div>
-              )}
-            </ScrollArea>
+              </ScrollArea>
+            ) : (
+              <div className="py-4 text-center text-sm text-muted-foreground">
+                No tasks completed on this day.
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

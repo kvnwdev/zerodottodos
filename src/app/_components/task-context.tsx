@@ -23,6 +23,7 @@ export type Task = {
   status: TaskStatus;
   isImportant: boolean;
   position: number;
+  totalPomodoros: number;
 };
 
 // Define the shape of server task data
@@ -32,6 +33,7 @@ type ServerTask = {
   status: string;
   isImportant: boolean;
   position: number;
+  totalPomodoros: number;
   createdAt?: Date;
   updatedAt?: Date;
   completedAt?: Date | null;
@@ -84,8 +86,13 @@ export function TaskProvider({ children }: { children: ReactNode }) {
   });
 
   const updateTaskMutation = api.task.update.useMutation({
-    onSuccess: () => {
+    onSuccess: (task) => {
       void utils.task.getAll.invalidate();
+
+      // If a task has been completed, also invalidate the activity graph data
+      if (task.status === "COMPLETED") {
+        void utils.task.getYearActivity.invalidate();
+      }
     },
   });
 
@@ -106,6 +113,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
           status: task.status as TaskStatus,
           isImportant: task.isImportant,
           position: task.position,
+          totalPomodoros: task.totalPomodoros,
         }));
         setOptimisticTasks(formattedTasks);
       } catch (error) {
@@ -130,6 +138,7 @@ export function TaskProvider({ children }: { children: ReactNode }) {
         isImportant,
         // Important tasks go to the top of their group, regular tasks go below important ones
         position: 0,
+        totalPomodoros: 0,
       };
 
       // Add to optimistic tasks
@@ -184,11 +193,20 @@ export function TaskProvider({ children }: { children: ReactNode }) {
       }
     }
 
+    // Check if we're marking a task as completed
+    const isCompletingTask = serverData.status === "COMPLETED";
+
     // Send update to server
     await updateTaskMutation.mutateAsync({
       id,
       ...serverData,
     });
+
+    // If task was completed using another method (like handleComplete in TaskItem),
+    // manually invalidate the activity graph data
+    if (isCompletingTask) {
+      void utils.task.getYearActivity.invalidate();
+    }
   };
 
   // Handle task delete

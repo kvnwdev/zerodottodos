@@ -1,12 +1,14 @@
 "use client";
 
 import { motion } from "motion/react";
-import { useState } from "react";
+import { useState, useMemo } from "react";
+
 interface ActivityGraphProps {
-  data: {
+  data: Array<{
     date: string;
     count: number;
-  }[];
+    pomodoros: number;
+  }>;
   onDaySelect?: (date: string) => void;
   selectedDate?: string | null;
 }
@@ -14,6 +16,7 @@ interface ActivityGraphProps {
 interface DayData {
   date: string;
   count: number;
+  pomodoros: number;
   day: number;
   isToday: boolean;
 }
@@ -24,44 +27,36 @@ export function ActivityGraph({
   selectedDate,
 }: ActivityGraphProps) {
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
-
-  // Generate dates for the activity graph
-  const today = new Date();
-  // Reset the time to midnight to ensure consistent date comparisons
-  today.setHours(0, 0, 0, 0);
-  // Add one day to correct for timezone offset
-  today.setDate(today.getDate() + 1);
-
-  console.log(`Today is: ${today.toISOString()}`);
+  const today = useMemo(() => {
+    const date = new Date();
+    date.setUTCHours(0, 0, 0, 0);
+    return date;
+  }, []);
 
   // Generate dates for the full 365-day period, including today
   const fullYearData: DayData[] = [];
   for (let i = 0; i <= 363; i++) {
     const date = new Date(today);
-    // Go backwards from today
-    date.setDate(today.getDate() - i);
-    const countDate = new Date(date);
-    countDate.setDate(countDate.getDate() - 1);
-
-    // Format date as YYYY-MM-DD for consistent comparison
-    const formattedDate = formatDateToYYYYMMDD(date);
-    const formattedCountDate = formatDateToYYYYMMDD(countDate);
+    date.setUTCDate(today.getUTCDate() - i);
+    // This will never be undefined since we're using a valid Date object
+    const formattedDate = date.toISOString().split("T")[0] ?? "";
 
     // Get count of activities for this day
-    const count = data.find((d) => d.date === formattedCountDate)?.count ?? 0;
-
-    if (i < 7) {
-      console.log(
-        `Generating day for ${formattedDate}, count: ${count}, isToday: ${i === 0}`,
-      );
-    }
+    const dayData = data?.find((d) => d.date === formattedDate);
 
     fullYearData.push({
       date: formattedDate,
-      count,
-      day: date.getDay(),
+      count: dayData?.count ?? 0,
+      pomodoros: dayData?.pomodoros ?? 0,
+      day: date.getUTCDay(), // 0 = Sunday, 6 = Saturday
       isToday: i === 0,
     });
+  }
+
+  // Today's data for debugging
+  const todayData = fullYearData.find((d) => d.isToday);
+  if (todayData) {
+    console.log("Today's data:", todayData);
   }
 
   // Reverse the array to have oldest dates first
@@ -73,15 +68,23 @@ export function ActivityGraph({
     weeks.push(fullYearData.slice(i, i + 7));
   }
 
-  console.log(
-    `Generated ${weeks.length} weeks with ${fullYearData.length} days total`,
-  );
-  console.log(
-    `First day: ${fullYearData[0]?.date}, Last day: ${fullYearData[fullYearData.length - 1]?.date}`,
-  );
+  console.log("=== Week Data ===");
+  const lastWeek = weeks[weeks.length - 1];
+  if (lastWeek) {
+    console.log(
+      "Last week's dates:",
+      lastWeek.map((d) => ({
+        date: d.date,
+        count: d.count,
+        isToday: d.isToday,
+      })),
+    );
+  }
 
   const getColorForCount = (count: number) => {
     if (count === 0) return "bg-neutral-100 dark:bg-neutral-800";
+
+    // Task completion color scale (green)
     if (count < 3) return "bg-emerald-200 dark:bg-emerald-800";
     if (count < 5) return "bg-emerald-300 dark:bg-emerald-700";
     return "bg-emerald-400 dark:bg-emerald-600";
@@ -93,41 +96,55 @@ export function ActivityGraph({
     }
   };
 
+  // Calculate tooltip content and position
+  const tooltipInfo = useMemo(() => {
+    if (!hoveredDay) return null;
+
+    const date = new Date(hoveredDay + "T00:00:00.000Z");
+
+    // Find the data for this day
+    const dayData = data.find((d) => d.date === hoveredDay);
+
+    return {
+      dayLabel: date.toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        timeZone: "UTC", // Force UTC to match our data
+      }),
+      countLabel: dayData?.count ?? 0,
+      pomodoroLabel: dayData?.pomodoros ?? 0,
+      position: {
+        x: date.getUTCHours() * 24 + date.getUTCMinutes() / 2,
+        y: date.getUTCDate() - today.getUTCDate() + 1,
+      },
+      date,
+    };
+  }, [hoveredDay, data, today]);
+
   return (
     <div className="relative">
       {hoveredDay && (
         <div className="pointer-events-none absolute -top-8 left-1/2 z-10 -translate-x-1/2 rounded-md bg-neutral-900 px-2 py-1 text-xs text-white dark:bg-white dark:text-neutral-900">
           <span className="block text-center">
-            {(() => {
-              // Fix date offset by adding a day
-              const date = new Date(hoveredDay);
-              date.setDate(date.getDate()); // Add one day to correct the offset
-              return date.toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              });
-            })()}
+            {tooltipInfo && (
+              <>
+                {tooltipInfo.dayLabel} • {tooltipInfo.countLabel} tasks
+              </>
+            )}
           </span>
         </div>
       )}
 
-      <div className="grid grid-cols-[repeat(53,1fr)] gap-1 overflow-hidden">
-        {weeks.map((week, weekIndex) => {
-          // Log the last couple of weeks for debugging
-          if (weekIndex >= weeks.length - 2) {
-            console.log(
-              `Week ${weekIndex}: ${JSON.stringify(week.map((d) => d.date))}`,
-            );
-          }
-
-          return week.map((day, dayIndex) => {
+      <div className="grid grid-cols-[repeat(53,1fr)] gap-1 overflow-hidden p-2">
+        {weeks.map((week, weekIndex) =>
+          week.map((day, dayIndex) => {
             const isSelected = selectedDate === day.date;
 
             // Log today's rendering
             if (day.isToday) {
               console.log(
-                `TODAY RENDERING: ${day.date}, count: ${day.count}, selected: ${isSelected}`,
+                `TODAY RENDERING: ${day.date}, tasks: ${day.count}, pomodoros: ${day.pomodoros}, selected: ${isSelected}`,
               );
             }
 
@@ -145,20 +162,9 @@ export function ActivityGraph({
                 onMouseLeave={() => setHoveredDay(null)}
               />
             );
-          });
-        })}
+          }),
+        )}
       </div>
     </div>
   );
 }
-
-// Format a date object to YYYY-MM-DD string
-const formatDateToYYYYMMDD = (date: Date): string => {
-  const year = date.getFullYear();
-  // Month is 0-based, so add 1 and pad with leading zero if needed
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  // Day of month, pad with leading zero if needed
-  const day = String(date.getDate()).padStart(2, "0");
-
-  return `${year}-${month}-${day}`;
-};

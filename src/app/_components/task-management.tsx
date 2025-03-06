@@ -46,6 +46,7 @@ export function TaskManagement() {
               content={task.content}
               status={task.status}
               isImportant={task.isImportant}
+              totalPomodoros={task.totalPomodoros}
               onUpdate={handleTaskUpdate}
               onDelete={handleTaskDelete}
             />

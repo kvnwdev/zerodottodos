@@ -2,6 +2,7 @@ import { postRouter } from "@/server/api/routers/post";
 import { createCallerFactory, createTRPCRouter } from "@/server/api/trpc";
 import { taskRouter } from "@/server/api/routers/task";
 import { completedDayRouter } from "@/server/api/routers/completedDay";
+import { pomodoroRouter } from "@/server/api/routers/pomodoro";
 
 /**
  * This is the primary router for your server.
@@ -12,6 +13,7 @@ export const appRouter = createTRPCRouter({
   post: postRouter,
   task: taskRouter,
   completedDay: completedDayRouter,
+  pomodoro: pomodoroRouter,
 });
 
 // export type definition of API
