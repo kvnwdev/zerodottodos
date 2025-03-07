@@ -131,7 +131,7 @@ export function TaskItem({
 
   return (
     <div
-      className={`group relative flex items-center gap-2 rounded-md border border-neutral-200 bg-white p-2 shadow-sm transition-colors dark:border-neutral-700 dark:bg-neutral-800`}
+      className={`mdr:border-neutral-500 mdr:bg-neutral-900 group relative flex items-center gap-2 rounded-md border border-neutral-200 bg-white p-2 shadow-sm transition-colors dark:border-neutral-700 dark:bg-neutral-800`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => {
         setIsHovered(false);
@@ -145,7 +145,7 @@ export function TaskItem({
         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded ${
           isImportant
             ? "text-amber-500 hover:text-amber-600"
-            : "text-neutral-300 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"
+            : "mdr:hover:text-amber-500 mdr:hover:text-amber-600 text-neutral-300 hover:text-amber-500 dark:text-neutral-500 dark:hover:text-amber-400"
         }`}
       >
         <Star
@@ -172,7 +172,7 @@ export function TaskItem({
             }
             setIsEditing(false);
           }}
-          className="flex-1 border-b border-neutral-300 bg-transparent text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-600 dark:focus:border-neutral-400"
+          className="mdr:border-neutral-500 mdr:focus:border-neutral-400 flex-1 border-b border-neutral-300 bg-transparent text-sm focus:border-neutral-500 focus:outline-none dark:border-neutral-600 dark:focus:border-neutral-400"
           autoComplete="off"
         />
       ) : (
@@ -217,7 +217,7 @@ export function TaskItem({
 
         <button
           onClick={handleComplete}
-          className="rounded p-1 text-neutral-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900 dark:hover:text-emerald-400"
+          className="mdr:hover:bg-emerald-500 mdr:hover:text-emerald-600 rounded p-1 text-neutral-500 hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900 dark:hover:text-emerald-400"
           title="Mark as completed"
         >
           <Check className="h-4 w-4" />
@@ -225,7 +225,7 @@ export function TaskItem({
 
         <button
           onClick={handleDelete}
-          className="rounded p-1 text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
+          className="mdr:hover:bg-red-500 mdr:hover:text-red-600 rounded p-1 text-neutral-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900 dark:hover:text-red-400"
           title="Delete task"
         >
           <Trash className="h-4 w-4" />

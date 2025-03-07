@@ -52,6 +52,7 @@ export const pomodoroRouter = createTRPCRouter({
             id: input.sessionId,
           },
           data: {
+            // Store completion time in local timezone
             completedAt: new Date(),
           },
         });

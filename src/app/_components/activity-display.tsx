@@ -27,14 +27,25 @@ interface CompletedTask {
 const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "selected date";
 
-  const date = new Date(dateString + "T00:00:00.000Z");
-  return date.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC", // Force UTC to match our data
-  });
+  try {
+    // Create date object directly from ISO date string
+    const date = new Date(dateString);
+
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      return "invalid date";
+    }
+
+    return date.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+  } catch (e) {
+    console.error(`Error formatting date ${dateString}:`, e);
+    return "invalid date";
+  }
 };
 
 export function ActivityDisplay() {
@@ -139,7 +150,7 @@ export function ActivityDisplay() {
   return (
     <div className="mb-8 space-y-4">
       <h2 className="text-xl font-semibold">Activity</h2>
-      <div className="activity-graph rounded-lg border bg-card p-2 shadow-sm">
+      <div className="activity-graph rounded-lg border border-border bg-card p-2 shadow-sm">
         <ActivityGraph
           data={formattedActivityData}
           onDaySelect={handleDaySelect}
@@ -150,19 +161,19 @@ export function ActivityDisplay() {
       <AnimatePresence>
         {showTaskDetails && selectedDate && (
           <motion.div
-            className="task-details-container relative rounded-lg border bg-card p-4 shadow-sm"
+            className="task-details-container relative rounded-lg border border-border bg-card p-4 shadow-sm"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
           >
             <div className="mb-4 flex items-center justify-between">
-              <h3 className="text-lg font-medium">
+              <h3 className="text-lg font-medium text-foreground">
                 Tasks completed on {formatDate(selectedDate)}
               </h3>
               <button
                 onClick={handleCloseDetails}
-                className="`hover`:bg-muted rounded-full p-1"
+                className="rounded-full p-1 hover:bg-secondary"
                 aria-label="Close task details"
               >
                 <X size={18} />
@@ -178,11 +189,12 @@ export function ActivityDisplay() {
                 <ul className="space-y-2 pb-1">
                   {getTasksForDate.data.map((task: CompletedTask) => (
                     <li key={task.id} className="flex items-start text-sm">
-                      <span className="mr-2 text-xs text-neutral-400">
+                      <span className="mr-2 text-xs text-muted-foreground">
                         {task.completedAt
                           ? new Date(task.completedAt).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
+                              // Use local timezone by default
                             })
                           : ""}
                       </span>
@@ -190,7 +202,7 @@ export function ActivityDisplay() {
                         {task.content}
                       </span>
                       {task.totalPomodoros > 0 && (
-                        <span className="ml-2 rounded-full bg-rose-100 px-2 py-0.5 text-xs font-medium dark:bg-rose-900">
+                        <span className="ml-2 rounded-full bg-primary/20 px-2 py-0.5 text-xs font-medium text-primary">
                           {task.totalPomodoros} ⏰
                         </span>
                       )}
@@ -200,7 +212,7 @@ export function ActivityDisplay() {
               </ScrollArea>
             ) : (
               <div className="py-4 text-center text-sm text-muted-foreground">
-                No tasks completed on this day.
+                No tasks completed on this day
               </div>
             )}
           </motion.div>

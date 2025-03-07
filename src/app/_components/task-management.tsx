@@ -52,7 +52,7 @@ export function TaskManagement() {
             />
           ))}
           {status !== TaskStatus.COMPLETED && filteredTasks.length === 0 && (
-            <div className="rounded-md border border-neutral-200 bg-neutral-50 p-2 text-center text-xs text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
+            <div className="mdr:border-neutral-500 mdr:bg-neutral-900 mdr:text-neutral-500 rounded-md border border-neutral-200 bg-neutral-50 p-2 text-center text-xs text-neutral-400 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-500">
               no tasks
             </div>
           )}

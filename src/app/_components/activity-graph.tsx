@@ -29,7 +29,7 @@ export function ActivityGraph({
   const [hoveredDay, setHoveredDay] = useState<string | null>(null);
   const today = useMemo(() => {
     const date = new Date();
-    date.setUTCHours(0, 0, 0, 0);
+    date.setHours(0, 0, 0, 0);
     return date;
   }, []);
 
@@ -37,9 +37,12 @@ export function ActivityGraph({
   const fullYearData: DayData[] = [];
   for (let i = 0; i <= 363; i++) {
     const date = new Date(today);
-    date.setUTCDate(today.getUTCDate() - i);
-    // This will never be undefined since we're using a valid Date object
-    const formattedDate = date.toISOString().split("T")[0] ?? "";
+    date.setDate(today.getDate() - i);
+
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const formattedDate = `${year}-${month}-${day}`;
 
     // Get count of activities for this day
     const dayData = data?.find((d) => d.date === formattedDate);
@@ -48,7 +51,7 @@ export function ActivityGraph({
       date: formattedDate,
       count: dayData?.count ?? 0,
       pomodoros: dayData?.pomodoros ?? 0,
-      day: date.getUTCDay(), // 0 = Sunday, 6 = Saturday
+      day: date.getDay(), // 0 = Sunday, 6 = Saturday
       isToday: i === 0,
     });
   }
@@ -100,7 +103,13 @@ export function ActivityGraph({
   const tooltipInfo = useMemo(() => {
     if (!hoveredDay) return null;
 
-    const date = new Date(hoveredDay + "T00:00:00.000Z");
+    // Parse date parts to create a date in local timezone
+    const dateParts = hoveredDay.split("-");
+    // Ensure all parts exist with fallbacks
+    const year = parseInt(dateParts[0] ?? "2000", 10);
+    const month = parseInt(dateParts[1] ?? "1", 10);
+    const day = parseInt(dateParts[2] ?? "1", 10);
+    const date = new Date(year, month - 1, day);
 
     // Find the data for this day
     const dayData = data.find((d) => d.date === hoveredDay);
@@ -110,13 +119,12 @@ export function ActivityGraph({
         month: "short",
         day: "numeric",
         year: "numeric",
-        timeZone: "UTC", // Force UTC to match our data
       }),
       countLabel: dayData?.count ?? 0,
       pomodoroLabel: dayData?.pomodoros ?? 0,
       position: {
-        x: date.getUTCHours() * 24 + date.getUTCMinutes() / 2,
-        y: date.getUTCDate() - today.getUTCDate() + 1,
+        x: date.getHours() * 24 + date.getMinutes() / 2,
+        y: date.getDate() - today.getDate() + 1,
       },
       date,
     };
@@ -136,7 +144,7 @@ export function ActivityGraph({
         </div>
       )}
 
-      <div className="grid grid-cols-[repeat(53,1fr)] gap-1 overflow-hidden p-2">
+      <div className="grid grid-cols-[repeat(52,1fr)] gap-1 overflow-hidden p-2">
         {weeks.map((week, weekIndex) =>
           week.map((day, dayIndex) => {
             const isSelected = selectedDate === day.date;

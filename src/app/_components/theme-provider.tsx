@@ -3,11 +3,12 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname } from "next/navigation"; // Add import for Next.js usePathname hook
 
-type Theme = "light" | "dark";
+type Theme = "light" | "dark" | "mdr";
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
+  setMdrTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -26,7 +27,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
       const storedTheme = localStorage.getItem("theme") as Theme | null;
 
       // Set the theme based on storage or system preference
-      if (storedTheme && (storedTheme === "light" || storedTheme === "dark")) {
+      if (
+        storedTheme &&
+        (storedTheme === "light" ||
+          storedTheme === "dark" ||
+          storedTheme === "mdr")
+      ) {
         setTheme(storedTheme);
       } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
         setTheme("dark");
@@ -63,11 +69,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     // For landing page, always use light theme
     const isAppRoute = pathname?.startsWith("/app");
 
-    // Modified logic to handle theme switching properly
-    if (theme === "dark" && isAppRoute) {
-      document.documentElement.classList.add("dark");
-    } else if (theme === "light" || !isAppRoute) {
-      document.documentElement.classList.remove("dark");
+    // Remove all theme classes first
+    document.documentElement.classList.remove("dark", "mdr");
+
+    // Apply the appropriate theme
+    if (isAppRoute) {
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark");
+      } else if (theme === "mdr") {
+        document.documentElement.classList.add("mdr");
+      }
     }
 
     // Save theme preference to localStorage
@@ -84,14 +95,23 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     setTheme((prev) => {
       // Handle the undefined case
       if (prev === undefined) return "dark";
-      return prev === "light" ? "dark" : "light";
+      // Cycle between light and dark, skipping MDR in normal toggle
+      if (prev === "light") return "dark";
+      if (prev === "dark") return "light";
+      // If it's MDR, go back to light
+      return "light";
     });
+  };
+
+  const setMdrTheme = () => {
+    setTheme("mdr");
   };
 
   // Provide a default value while theme is initializing
   const contextValue = {
     theme: theme ?? "light",
     toggleTheme,
+    setMdrTheme,
   };
 
   return (
