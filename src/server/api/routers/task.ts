@@ -105,17 +105,24 @@ export const taskRouter = createTRPCRouter({
 
         // When marked as completed, set the completedAt timestamp
         if (input.status === "COMPLETED") {
+          // Store the completedAt timestamp in a way that preserves local timezone information
           updateData.completedAt = new Date();
 
           // Create a completed day record for today
           const today = new Date();
+          // Format today's date in user's local timezone
+          const todayFormatted = new Date(
+            today.getFullYear(),
+            today.getMonth(),
+            today.getDate(),
+          );
 
           // Check if today already exists in completedDays
           const existingDay = await ctx.db.completedDay.findFirst({
             where: {
               userId: ctx.session.user.id,
               date: {
-                equals: today,
+                equals: todayFormatted,
               },
             },
           });
@@ -125,7 +132,7 @@ export const taskRouter = createTRPCRouter({
             await ctx.db.completedDay.create({
               data: {
                 userId: ctx.session.user.id,
-                date: today,
+                date: todayFormatted,
               },
             });
           }
@@ -225,14 +232,14 @@ export const taskRouter = createTRPCRouter({
             },
           });
 
-          // Filter tasks by month and day, regardless of year
+          // Filter tasks by month and day using local timezone methods
           return tasks.filter((task) => {
             if (!task.completedAt) return false;
 
-            // Use UTC methods consistently
+            // Use local timezone methods
             const taskDate = new Date(task.completedAt);
-            const taskMonth = taskDate.getUTCMonth(); // 0-indexed
-            const taskDay = taskDate.getUTCDate();
+            const taskMonth = taskDate.getMonth(); // 0-indexed
+            const taskDay = taskDate.getDate();
 
             return taskMonth === monthIndex && taskDay === day;
           });
@@ -296,8 +303,13 @@ export const taskRouter = createTRPCRouter({
 
     for (const task of completedTasks) {
       if (task.completedAt) {
-        // Get UTC date string (YYYY-MM-DD)
-        const dateStr = task.completedAt.toISOString().split("T")[0];
+        // Format date in user's local timezone instead of UTC
+        const taskDate = new Date(task.completedAt);
+        const year = taskDate.getFullYear();
+        const month = String(taskDate.getMonth() + 1).padStart(2, "0");
+        const day = String(taskDate.getDate()).padStart(2, "0");
+        const dateStr = `${year}-${month}-${day}`;
+
         if (!dateStr) continue; // Skip if we couldn't get a valid date string
 
         // Get or initialize the day's data
@@ -353,13 +365,19 @@ export const taskRouter = createTRPCRouter({
 
       // Create a completed day record for today
       const today = new Date();
+      // Format today's date in user's local timezone
+      const todayFormatted = new Date(
+        today.getFullYear(),
+        today.getMonth(),
+        today.getDate(),
+      );
 
       // Check if today already exists in completedDays
       const existingDay = await ctx.db.completedDay.findFirst({
         where: {
           userId: ctx.session.user.id,
           date: {
-            equals: today,
+            equals: todayFormatted,
           },
         },
       });
@@ -369,7 +387,7 @@ export const taskRouter = createTRPCRouter({
         await ctx.db.completedDay.create({
           data: {
             userId: ctx.session.user.id,
-            date: today,
+            date: todayFormatted,
           },
         });
       }

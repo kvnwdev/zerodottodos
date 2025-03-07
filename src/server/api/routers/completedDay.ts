@@ -27,10 +27,19 @@ export const completedDayRouter = createTRPCRouter({
       },
     });
 
-    return completedDays.map((day) => ({
-      date: day.date.toISOString().split("T")[0],
-      count: day._count.tasks,
-    }));
+    return completedDays.map((day) => {
+      // Format date in user's local timezone
+      const date = new Date(day.date);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const dayOfMonth = String(date.getDate()).padStart(2, "0");
+      const formattedDate = `${year}-${month}-${dayOfMonth}`;
+
+      return {
+        date: formattedDate,
+        count: day._count.tasks,
+      };
+    });
   }),
 
   // Toggle a day as completed
@@ -160,14 +169,22 @@ export const completedDayRouter = createTRPCRouter({
           userId,
           date: dateClone,
           tasks: {
-            create: Array.from({ length: taskCount }, (_, i) => ({
-              userId,
-              content: `Sample task ${i + 1} for ${dateClone.toISOString().split("T")[0]}`,
-              isImportant: Math.random() > 0.7,
-              status: "COMPLETED",
-              position: i,
-              completedAt: dateClone,
-            })),
+            create: Array.from({ length: taskCount }, (_, i) => {
+              // Format date in local timezone for task content
+              const year = dateClone.getFullYear();
+              const month = String(dateClone.getMonth() + 1).padStart(2, "0");
+              const day = String(dateClone.getDate()).padStart(2, "0");
+              const formattedDate = `${year}-${month}-${day}`;
+
+              return {
+                userId,
+                content: `Sample task ${i + 1} for ${formattedDate}`,
+                isImportant: Math.random() > 0.7,
+                status: "COMPLETED",
+                position: i,
+                completedAt: dateClone,
+              };
+            }),
           },
         });
       }

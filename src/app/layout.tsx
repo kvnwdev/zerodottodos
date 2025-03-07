@@ -6,6 +6,7 @@ import { type Metadata } from "next";
 import { TRPCReactProvider } from "@/trpc/react";
 import { ThemeProvider } from "@/app/_components/theme-provider";
 import { PomodoroProvider } from "@/app/_components/pomodoro/pomodoro-context";
+import { MdrGridOverlay } from "@/app/_components/mdr-grid-overlay";
 
 export const metadata: Metadata = {
   title: "0.todos | minimal task tracking",
@@ -30,10 +31,12 @@ export default function RootLayout({
               (function() {
                 try {
                   const theme = localStorage.getItem('theme');
-                  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                  if (theme === 'mdr') {
+                    document.documentElement.classList.add('mdr');
+                  } else if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
                     document.documentElement.classList.add('dark');
                   } else {
-                    document.documentElement.classList.remove('dark');
+                    document.documentElement.classList.remove('dark', 'mdr');
                   }
                 } catch (e) {}
               })();
@@ -41,10 +44,13 @@ export default function RootLayout({
           }}
         />
       </head>
-      <body className="min-h-screen bg-white text-neutral-900 transition-colors duration-200 dark:bg-neutral-900 dark:text-neutral-50">
+      <body className="min-h-screen bg-background text-foreground transition-colors duration-300">
         <TRPCReactProvider>
           <ThemeProvider>
-            <PomodoroProvider>{children}</PomodoroProvider>
+            <PomodoroProvider>
+              <MdrGridOverlay />
+              {children}
+            </PomodoroProvider>
           </ThemeProvider>
         </TRPCReactProvider>
       </body>

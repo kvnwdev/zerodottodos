@@ -41,11 +41,7 @@ function InspirationalMessage() {
     setMessage(inspirationalMessages[randomIndex] ?? "keep it minimal.");
   }, []);
 
-  return (
-    <div className="text-xs text-neutral-500 dark:text-neutral-400">
-      {message}
-    </div>
-  );
+  return <div className="text-xs text-foreground">{message}</div>;
 }
 
 export function Footer() {
@@ -54,16 +50,10 @@ export function Footer() {
       <div className="mx-auto w-full border-t border-neutral-200 px-4 pt-8 dark:border-neutral-800">
         <div className="flex flex-col items-center justify-between gap-4 text-sm text-neutral-600 dark:text-neutral-400 sm:flex-row">
           <div className="flex gap-4">
-            <Link
-              href="/privacy"
-              className="hover:text-neutral-900 dark:hover:text-neutral-200"
-            >
+            <Link href="/privacy" className="text-foreground hover:scale-110">
               privacy
             </Link>
-            <Link
-              href="/terms"
-              className="hover:text-neutral-900 dark:hover:text-neutral-200"
-            >
+            <Link href="/terms" className="text-foreground hover:scale-110">
               terms
             </Link>
           </div>
@@ -75,7 +65,7 @@ export function Footer() {
               href="https://github.com/kvnwdev/zerodottodos"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-neutral-900 dark:hover:text-neutral-200"
+              className="text-foreground hover:scale-110"
             >
               <SiGithub className="h-4 w-4" />
             </Link>
@@ -83,7 +73,7 @@ export function Footer() {
               href="https://x.com/kvnwdev"
               target="_blank"
               rel="noopener noreferrer"
-              className="hover:text-neutral-900 dark:hover:text-neutral-200"
+              className="text-foreground hover:scale-110"
             >
               <SiX className="h-4 w-4" />
             </Link>

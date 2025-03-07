@@ -55,15 +55,16 @@ export function PomodoroTimer() {
   return (
     <>
       <div className="flex items-center gap-2">
-        <div className="font-mono text-sm">
+        <div className="font-mono text-sm text-primary">
           {formatTime(state.timeRemaining)}
           {state.isFastMode && (
-            <span className="ml-2 text-xs text-yellow-500">fast</span>
+            <span className="ml-2 text-xs text-accent">fast</span>
           )}
         </div>
         <Button
           variant="ghost"
           size="sm"
+          className="text-primary hover:bg-secondary"
           onClick={() => {
             if (state.isActive) {
               pausePomodoro();
@@ -79,7 +80,12 @@ export function PomodoroTimer() {
               : "start break"}
         </Button>
         {state.type === "BREAK" && !state.isActive && (
-          <Button variant="ghost" size="sm" onClick={skipBreak}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-primary hover:bg-secondary"
+            onClick={skipBreak}
+          >
             skip
           </Button>
         )}

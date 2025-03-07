@@ -28,7 +28,7 @@
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
-    --radius: 0.5rem
+    --radius: 0.5rem;
   }
   .dark {
     --background: 0 0% 3.9%;
@@ -54,7 +54,36 @@
     --chart-2: 160 60% 45%;
     --chart-3: 30 80% 55%;
     --chart-4: 280 65% 60%;
-    --chart-5: 340 75% 55%
+    --chart-5: 340 75% 55%;
+  }
+
+  /* MDR Theme - Macrodata Refinement inspired by the screenshot */
+  .mdr {
+    --background: 215 60% 10%; /* Deep blue background */
+    --foreground: 200 100% 85%; /* Light blue text */
+    --card: 215 50% 15%; /* Slightly lighter blue for cards */
+    --card-foreground: 200 100% 85%;
+    --popover: 215 50% 15%;
+    --popover-foreground: 200 100% 85%;
+    --primary: 200 100% 65%; /* Bright blue for primary elements */
+    --primary-foreground: 215 60% 10%;
+    --secondary: 215 40% 20%; /* Darker blue for secondary elements */
+    --secondary-foreground: 200 100% 85%;
+    --muted: 215 30% 25%;
+    --muted-foreground: 200 50% 70%;
+    --accent: 190 80% 50%; /* Cyan accent color */
+    --accent-foreground: 215 60% 10%;
+    --destructive: 0 100% 50%; /* Red for destructive actions */
+    --destructive-foreground: 200 100% 85%;
+    --border: 215 30% 25%;
+    --input: 215 30% 25%;
+    --ring: 190 80% 50%;
+    /* Chart colors for data visualization */
+    --chart-1: 190 80% 55%;
+    --chart-2: 170 70% 45%;
+    --chart-3: 150 60% 50%;
+    --chart-4: 220 70% 60%;
+    --chart-5: 240 80% 65%;
   }
 }
 
@@ -65,4 +94,12 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* Add a transition for smooth theme switching */
+body,
+html {
+  transition:
+    background-color 0.3s ease,
+    color 0.3s ease;
 }
