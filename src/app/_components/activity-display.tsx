@@ -28,19 +28,20 @@ const formatDate = (dateString: string | undefined) => {
   if (!dateString) return "selected date";
 
   try {
-    // Create date object directly from ISO date string
-    const date = new Date(dateString);
+    // Ensure we're working with a UTC date by appending the time component
+    const utcDate = new Date(dateString + "T00:00:00Z");
 
     // Check if date is valid
-    if (isNaN(date.getTime())) {
+    if (isNaN(utcDate.getTime())) {
       return "invalid date";
     }
 
-    return date.toLocaleDateString("en-US", {
+    return utcDate.toLocaleDateString("en-US", {
       weekday: "long",
       month: "long",
       day: "numeric",
       year: "numeric",
+      timeZone: "UTC", // Ensure we stay in UTC when formatting
     });
   } catch (e) {
     console.error(`Error formatting date ${dateString}:`, e);
